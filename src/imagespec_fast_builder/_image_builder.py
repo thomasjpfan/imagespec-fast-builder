@@ -33,7 +33,7 @@ DOCKER_FILE_TEMPLATE = Template(
 FROM thomasjpfan/fast-builder-base:0.0.1 as build
 
 RUN --mount=type=cache,target=/opt/conda/pkgs,id=conda \
-    mamba create \
+    mamba create --verbose \
         -c conda-forge $CONDA_CHANNELS \
         -n dev -y python=$PYTHON_VERSION $CONDA_PACKAGES
 
@@ -116,7 +116,9 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
         conda_packages = ""
 
     if image_spec.conda_channels:
-        conda_channels = "-c ".join(image_spec.conda_channels)
+        conda_channels = " ".join(
+            f"-c {channel}" for channel in image_spec.conda_channels
+        )
     else:
         conda_channels = ""
 
