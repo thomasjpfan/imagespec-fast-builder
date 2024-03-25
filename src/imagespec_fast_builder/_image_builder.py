@@ -17,6 +17,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,id=uv \
     --mount=type=bind,target=requirements.txt,src=requirements.txt \
     /root/.cargo/bin/uv \
     pip install --python /opt/conda/envs/dev/bin/python $PIP_INDEX \
+    --verbose \
     --requirement requirements.txt
 """
 
