@@ -82,14 +82,13 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     if image_spec.requirements:
         with open(image_spec.requirements) as f:
             requirements.extend([line.strip() for line in f.readlines()])
-    requirements.extend(image_spec.packages)
 
-    if requirements:
-        requirements_path = tmp_dir / "requirements.txt"
-        requirements_path.write_text("\n".join(requirements))
-        python_install_command = PYTHON_INSTALL_COMMAND
-    else:
-        python_install_command = ""
+    if image_spec.packages:
+        requirements.extend(image_spec.packages)
+
+    requirements_path = tmp_dir / "requirements.txt"
+    requirements_path.write_text("\n".join(requirements))
+    python_install_command = PYTHON_INSTALL_COMMAND
 
     if image_spec.env:
         env = " ".join(f"{k}={v}" for k, v in image_spec.env.items())
