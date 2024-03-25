@@ -49,16 +49,18 @@ FROM $BASE_IMAGE AS runtime
 $APT_INSTALL_COMMAND
 
 COPY --from=build /venv /venv
-
-RUN echo "source /venv/bin/activate" >> ~/.bashrc
-SHELL ["/bin/bash", "-c"]
+ENV PATH="/venv/bin:$$PATH"
 
 WORKDIR /root
 ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 $ENV
 
 RUN useradd -u 1000 flytekit \
     && chown flytekit: /root \
-    && chown flytekit: /home
+    && chown flytekit: /home \
+    && mkdir /home/flytekit
+
+RUN echo "source /venv/bin/activate" >> /home/flytekit/.bashrc
+SHELL ["/bin/bash", "-c"]
 
 USER flytekit
 
@@ -76,7 +78,7 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     base_image = image_spec.base_image or "debian:bookworm-slim"
     pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
 
-    requirements = []
+    requirements = ["flytekit"]
     if image_spec.requirements:
         with open(image_spec.requirements) as f:
             requirements.extend([line.strip() for line in f.readlines()])

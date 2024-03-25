@@ -6,8 +6,8 @@ from imagespec_fast_builder import FastImageBuilder
 
 image_spec = ImageSpec(
     name="flyte_playground",
-    packages=["numpy", "scipy"],
-    registry="ghcr.io/thomasjpfan",
+    packages=["numpy"],
+    registry="localhost:30000",
 )
 
 parser = argparse.ArgumentParser()
