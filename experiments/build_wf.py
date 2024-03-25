@@ -1,10 +1,11 @@
 from flytekit import ImageSpec, task, workflow
 
 image = ImageSpec(
-    builder="fast-builder",
+    # builder="fast-builder",
+    builder="envd",
     packages=["numpy"],
-    registry="localhost:30000",
-    platform="linux/arm64",
+    env={"a": "b", "c": "d", "j": "k"},
+    registry="ghcr.io/thomasjpfan",
 )
 
 

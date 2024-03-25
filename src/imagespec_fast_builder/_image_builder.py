@@ -90,7 +90,7 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
         python_install_command = ""
 
     if image_spec.env:
-        env = " ".join(f"{k}={v}" for k, v in image_spec.items())
+        env = " ".join(f"{k}={v}" for k, v in image_spec.env.items())
     else:
         env = ""
 
