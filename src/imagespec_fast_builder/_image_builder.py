@@ -152,7 +152,7 @@ class FastImageBuilder(ImageSpecBuilder):
                 "image",
                 "build",
                 "--tag",
-                f"{image_spec.image_name()}-fast",
+                f"{image_spec.image_name()}",
                 "--platform",
                 image_spec.platform,
             ]

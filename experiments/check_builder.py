@@ -1,3 +1,5 @@
+import argparse
+
 from flytekit import ImageSpec
 from flytekitplugins.envd import EnvdImageSpecBuilder
 from imagespec_fast_builder import FastImageBuilder
@@ -5,12 +7,17 @@ from imagespec_fast_builder import FastImageBuilder
 image_spec = ImageSpec(
     name="flyte_playground",
     packages=["numpy", "scipy"],
-    source_root="dockerfiles",
     registry="ghcr.io/thomasjpfan",
 )
 
-# envd_builder = EnvdImageSpecBuilder()
-# envd_builder.build_image(image_spec)
+parser = argparse.ArgumentParser()
+parser.add_argument("builder", choices=["envd", "fast-builder"])
 
-builder = FastImageBuilder()
+args = parser.parse_args()
+
+if args.builder == "envd":
+    envd_builder = EnvdImageSpecBuilder()
+else:
+    builder = FastImageBuilder()
+
 builder.build_image(image_spec)
