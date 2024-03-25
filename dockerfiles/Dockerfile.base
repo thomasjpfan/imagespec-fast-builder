@@ -1,0 +1,13 @@
+#syntax=docker/dockerfile:1.5
+FROM condaforge/mambaforge:23.11.0-0 as build
+
+USER root
+
+RUN --mount=type=cache,target=/var/cache/apt,id=apt \
+    apt-get update && apt-get install -y \
+    curl wget git build-essential
+
+RUN wget https://astral.sh/uv/install.sh -O - | sh
+
+RUN --mount=type=cache,target=/opt/conda/pkgs,id=conda \
+    mamba install -c conda-forge -n base conda-pack -y

@@ -1,0 +1,117 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flytekitplugins-fast-builder"
+dynamic = ["version"]
+description = 'A faster ImageSpec builder for flytekit'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [{ name = "Thomas J. Fan", email = "thomasjpfan@gmail.com" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["flytekit"]
+
+[project.urls]
+Issues = "https://github.com/thomasjpfan/flytekitplugins-fast-builder/issues"
+Source = "https://github.com/thomasjpfan/flytekitplugins-fast-builder"
+
+[project.entry-points."flytekit.plugins"]
+fast_builder = "flytekitplugins_fast_builder"
+
+[tool.hatch.version]
+path = "src/flytekitplugins_fast_builder/__about__.py"
+
+[tool.hatch.envs.envd]
+dependencies = ["flytekitplugins-envd"]
+
+[tool.hatch.envs.default]
+dependencies = ["coverage[toml]>=6.5", "pytest"]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = ["- coverage combine", "coverage report"]
+cov = ["test-cov", "cov-report"]
+
+[tool.hatch.envs.types]
+dependencies = ["mypy>=1.0.0"]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/flytekitplugins_fast_builder tests}"
+
+[tool.hatch.envs.lint]
+dependencies = ["ruff>=0.0.243"]
+[tool.hatch.envs.lint.scripts]
+fmt = ["ruff format {args:.}", "ruff check --fix {args:.}"]
+
+[tool.coverage.run]
+source_pkgs = ["flytekitplugins_fast_builder", "tests"]
+branch = true
+parallel = true
+omit = ["src/flytekitplugins_fast_builder/__about__.py"]
+
+[tool.hatch.envs.test]
+dependencies = ["pytest"]
+[[tool.hatch.envs.test.matrix]]
+python = ["3.8", "3.12"]
+[tool.hatch.envs.test.scripts]
+all = "pytest {args:tests}"
+
+[tool.ruff]
+target-version = "py38"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+  "A",
+  "ARG",
+  "B",
+  "C",
+  "DTZ",
+  "E",
+  "EM",
+  "F",
+  "FBT",
+  "I",
+  "N",
+  "PLC",
+  "PLE",
+  "PLR",
+  "PLW",
+  "Q",
+  "RUF",
+  "S",
+  "T",
+  "TID",
+  "UP",
+  "W",
+  "YTT",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rustimport_jupyter"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertio
+"tests/**/*" = ["PLR2004", "S101"]
+
+[tool.coverage.paths]
+flytekitplugins_fast_builder = [
+  "src/flytekitplugins_fast_builder",
+  "*/flytekitplugins-fast-builder/src/flytekitplugins_fast_builder",
+]
+tests = ["tests", "*/flytekitplugins-fast-builder/tests"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
