@@ -22,7 +22,7 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["flytekit"]
+dependencies = ["flytekit>=1.11.0"]
 
 [project.urls]
 Issues = "https://github.com/thomasjpfan/imagespec-fast-builder/issues"
