@@ -17,6 +17,20 @@
 pip install imagespec-fast-builder
 ```
 
+## How to use
+
+After installing, set `ImageSpec`'s builder to `fast-builder`:
+
+```python
+from flytekit import ImageSpec
+
+image = ImageSpec(
+    builder="fast-builder",
+    packages=["numpy"],
+    registry="localhost:30000",  # Any registry
+)
+```
+
 ## License
 
 `imagespec-fast-builder` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
