@@ -2,8 +2,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 from pathlib import Path
 from string import Template
+from typing import ClassVar
 
 import click
 from flytekit.image_spec.image_spec import (
@@ -72,11 +74,6 @@ USER flytekit
 $COPY_COMMAND
 """
 )
-# TODO: Add support for the following
-# cuda: Optional[str] = None
-# cudnn: Optional[str] = None
-# registry_config: Optional[str] = None
-# commands: Optional[List[str]] = None
 
 
 def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
@@ -150,7 +147,42 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
 class FastImageBuilder(ImageSpecBuilder):
     """Image builder using Docker and buildkit."""
 
+    _SUPPORTED_IMAGE_SPEC_PARAMETERS: ClassVar[set] = {
+        "name",
+        "python_version",
+        "builder",
+        "source_root",
+        "env",
+        "registry",
+        "packages",
+        "conda_packages",
+        "conda_channels",
+        "requirements",
+        "apt_packages",
+        "platform",
+        # "cuda",
+        # "cudnn",
+        "base_image",
+        "pip_index",
+        # "registry_config",
+        # "commands",
+    }
+
     def build_image(self, image_spec: ImageSpec) -> str:
+        unsupported_parameters = [
+            name
+            for name, value in vars(image_spec).items()
+            if value is not None
+            and name not in self._SUPPORTED_IMAGE_SPEC_PARAMETERS
+            and not name.startswith("_")
+        ]
+        if unsupported_parameters:
+            msg = (
+                f"The following parameters are unsupported and ignored: "
+                f"{unsupported_parameters}"
+            )
+            warnings.warn(msg, UserWarning, stacklevel=2)
+
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
             write_dockerfile(image_spec, tmp_path)
