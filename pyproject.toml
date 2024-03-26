@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -32,7 +32,7 @@ Source = "https://github.com/thomasjpfan/imagespec-fast-builder"
 fast_builder = "imagespec_fast_builder"
 
 [tool.hatch.version]
-path = "src/imagespec_fast_builder/__about__.py"
+source = "vcs"
 
 [tool.hatch.envs.envd]
 dependencies = ["imagespec-envd"]

@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,id=uv \
 
 APT_INSTALL_COMMAND_TEMPLATE = Template("""\
 RUN --mount=type=cache,target=/var/cache/apt,id=apt \
-    apt-get update && apt-get install -y \
+    apt-get update && apt-get install -y --no-install-recommends \
     $APT_PACKAGES
 """)
 
@@ -47,18 +47,22 @@ RUN /venv/bin/conda-unpack
 
 FROM $BASE_IMAGE AS runtime
 
+RUN --mount=type=cache,target=/var/cache/apt,id=apt \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates
+RUN update-ca-certificates
+
 $APT_INSTALL_COMMAND
 
 COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$$PATH"
 
 WORKDIR /root
-ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 $ENV
+ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
-RUN useradd -u 1000 flytekit \
+RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
     && chown flytekit: /root \
-    && chown flytekit: /home \
-    && mkdir /home/flytekit
+    && chown flytekit: /home
 
 RUN echo "source /venv/bin/activate" >> /home/flytekit/.bashrc
 SHELL ["/bin/bash", "-c"]

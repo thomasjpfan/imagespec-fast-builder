@@ -1,13 +1,14 @@
 import argparse
 
 from flytekit import ImageSpec
-from flytekitplugins.envd import EnvdImageSpecBuilder
+
+# from flytekitplugins.envd import EnvdImageSpecBuilder
 from imagespec_fast_builder import FastImageBuilder
 
 image_spec = ImageSpec(
     name="flyte_playground",
     packages=["numpy"],
-    registry="localhost:30000",
+    # registry="localhost:30000",
 )
 
 parser = argparse.ArgumentParser()
