@@ -111,10 +111,17 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     else:
         copy_command = ""
 
-    if image_spec.conda_packages:
-        conda_packages = " ".join(image_spec.conda_packages)
+    conda_packages = image_spec.conda_packages or []
+    if image_spec.cuda:
+        conda_packages.append(f"cuda={image_spec.cuda}")
+
+    if image_spec.cudnn:
+        conda_packages.append(f"cudnn={image_spec.cudnn}")
+
+    if conda_packages:
+        conda_packages_concat = " ".join(conda_packages)
     else:
-        conda_packages = ""
+        conda_packages_concat = ""
 
     if image_spec.conda_channels:
         conda_channels = " ".join(
@@ -131,7 +138,7 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     docker_content = DOCKER_FILE_TEMPLATE.substitute(
         PYTHON_VERSION=python_version,
         PYTHON_INSTALL_COMMAND=python_install_command,
-        CONDA_PACKAGES=conda_packages,
+        CONDA_PACKAGES=conda_packages_concat,
         CONDA_CHANNELS=conda_channels,
         APT_INSTALL_COMMAND=apt_install_command,
         BASE_IMAGE=base_image,
@@ -160,8 +167,8 @@ class FastImageBuilder(ImageSpecBuilder):
         "requirements",
         "apt_packages",
         "platform",
-        # "cuda",
-        # "cudnn",
+        "cuda",
+        "cudnn",
         "base_image",
         "pip_index",
         # "registry_config",

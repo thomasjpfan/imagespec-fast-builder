@@ -7,7 +7,10 @@ from imagespec_fast_builder import FastImageBuilder
 
 image_spec = ImageSpec(
     name="flyte_playground",
-    packages=["numpy"],
+    # packages=["numpy"],
+    conda_packages=["numpy"],
+    cuda="12",
+    cudnn="8",
     # registry="localhost:30000",
 )
 
