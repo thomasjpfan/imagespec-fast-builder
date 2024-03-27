@@ -72,6 +72,7 @@ SHELL ["/bin/bash", "-c"]
 USER flytekit
 
 $COPY_COMMAND
+$RUN_COMMANDS
 """
 )
 
@@ -135,6 +136,11 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     else:
         python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
+    if image_spec.commands:
+        run_commands = "\n".join(f"RUN {command}" for command in image_spec.commands)
+    else:
+        run_commands = ""
+
     docker_content = DOCKER_FILE_TEMPLATE.substitute(
         PYTHON_VERSION=python_version,
         PYTHON_INSTALL_COMMAND=python_install_command,
@@ -145,6 +151,7 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
         PIP_INDEX=pip_index,
         ENV=env,
         COPY_COMMAND=copy_command,
+        RUN_COMMANDS=run_commands,
     )
 
     dockerfile_path = tmp_dir / "Dockerfile"
@@ -172,7 +179,7 @@ class FastImageBuilder(ImageSpecBuilder):
         "base_image",
         "pip_index",
         # "registry_config",
-        # "commands",
+        "commands",
     }
 
     def build_image(self, image_spec: ImageSpec) -> str:
