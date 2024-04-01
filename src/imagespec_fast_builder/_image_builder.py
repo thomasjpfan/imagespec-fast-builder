@@ -23,11 +23,13 @@ RUN --mount=type=cache,target=/root/.cache/uv,id=uv \
     --requirement requirements.txt
 """
 
-APT_INSTALL_COMMAND_TEMPLATE = Template("""\
+APT_INSTALL_COMMAND_TEMPLATE = Template(
+    """\
 RUN --mount=type=cache,target=/var/cache/apt,id=apt \
     apt-get update && apt-get install -y --no-install-recommends \
     $APT_PACKAGES
-""")
+"""
+)
 
 DOCKER_FILE_TEMPLATE = Template(
     """\
@@ -62,6 +64,8 @@ ENV PATH="/venv/bin:$$PATH"
 WORKDIR /root
 ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
+$RUN_COMMANDS
+
 RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
     && chown flytekit: /root \
     && chown flytekit: /home
@@ -72,7 +76,6 @@ SHELL ["/bin/bash", "-c"]
 USER flytekit
 
 $COPY_COMMAND
-$RUN_COMMANDS
 """
 )
 
