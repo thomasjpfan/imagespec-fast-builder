@@ -19,7 +19,6 @@ RUN --mount=type=cache,target=/root/.cache/uv,id=uv \
     --mount=type=bind,target=requirements.txt,src=requirements.txt \
     /root/.cargo/bin/uv \
     pip install --python /opt/conda/envs/dev/bin/python $PIP_INDEX \
-    --verbose \
     --requirement requirements.txt
 """
 
@@ -37,9 +36,13 @@ DOCKER_FILE_TEMPLATE = Template(
 FROM thomasjpfan/fast-builder-base:0.0.1 as build
 
 RUN --mount=type=cache,target=/opt/conda/pkgs,id=conda \
-    mamba create --verbose \
+    mamba create \
         -c conda-forge $CONDA_CHANNELS \
         -n dev -y python=$PYTHON_VERSION $CONDA_PACKAGES
+
+WORKDIR /root
+
+$COPY_COMMAND
 
 $PYTHON_INSTALL_COMMAND
 
