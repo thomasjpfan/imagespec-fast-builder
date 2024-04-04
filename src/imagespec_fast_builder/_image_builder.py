@@ -189,6 +189,11 @@ class FastImageBuilder(ImageSpecBuilder):
     }
 
     def build_image(self, image_spec: ImageSpec) -> str:
+        return self._build_image(image_spec)
+
+    def _build_image(self, image_spec: ImageSpec, *, push: bool = True) -> str:
+        # For testing, set `push=False`` to just build the image locally and not push to
+        # registry
         unsupported_parameters = [
             name
             for name, value in vars(image_spec).items()
@@ -217,7 +222,7 @@ class FastImageBuilder(ImageSpecBuilder):
                 image_spec.platform,
             ]
 
-            if image_spec.registry:
+            if image_spec.registry and push:
                 command.append("--push")
             command.append(tmp_dir)
 
