@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs,id=conda \
 
 WORKDIR /root
 
-$COPY_COMMAND
+$COPY_COMMAND_BUILDER
 
 $PYTHON_INSTALL_COMMAND
 
@@ -70,15 +70,15 @@ ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $EN
 $RUN_COMMANDS
 
 RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
-    && chown flytekit: /root \
-    && chown flytekit: /home
+    && chown -R flytekit /root \
+    && chown -R flytekit /home
 
 RUN echo "source /venv/bin/activate" >> /home/flytekit/.bashrc
 SHELL ["/bin/bash", "-c"]
 
 USER flytekit
 
-$COPY_COMMAND
+$COPY_COMMAND_RUNTIME
 """
 )
 
@@ -114,9 +114,11 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     if image_spec.source_root:
         source_path = tmp_dir / "src"
         shutil.copytree(image_spec.source_root, source_path)
-        copy_command = "COPY ./src /root"
+        copy_command_builder = "COPY ./src /root"
+        copy_command_runtime = "COPY --chown=flytekit ./src /root"
     else:
-        copy_command = ""
+        copy_command_builder = ""
+        copy_command_runtime = ""
 
     conda_packages = image_spec.conda_packages or []
     if image_spec.cuda:
@@ -156,7 +158,8 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
         BASE_IMAGE=base_image,
         PIP_INDEX=pip_index,
         ENV=env,
-        COPY_COMMAND=copy_command,
+        COPY_COMMAND_BUILDER=copy_command_builder,
+        COPY_COMMAND_RUNTIME=copy_command_runtime,
         RUN_COMMANDS=run_commands,
     )
 
