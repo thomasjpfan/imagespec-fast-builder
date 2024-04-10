@@ -67,11 +67,11 @@ ENV PATH="/venv/bin:$$PATH"
 WORKDIR /root
 ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
-$RUN_COMMANDS
-
 RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
     && chown -R flytekit /root \
     && chown -R flytekit /home
+
+$RUN_COMMANDS
 
 RUN echo "source /venv/bin/activate" >> /home/flytekit/.bashrc
 SHELL ["/bin/bash", "-c"]
