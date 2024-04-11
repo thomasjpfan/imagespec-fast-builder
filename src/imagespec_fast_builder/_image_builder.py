@@ -17,7 +17,7 @@ from flytekit.image_spec.image_spec import (
 PYTHON_INSTALL_COMMAND = """\
 RUN --mount=type=cache,target=/root/.cache/uv,id=uv \
     --mount=type=bind,target=requirements.txt,src=requirements.txt \
-    /root/.cargo/bin/uv \
+    /opt/conda/bin/uv \
     pip install --python /opt/conda/envs/dev/bin/python $PIP_INDEX \
     --requirement requirements.txt
 """
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,id=apt \
 DOCKER_FILE_TEMPLATE = Template(
     """\
 #syntax=docker/dockerfile:1.5
-FROM thomasjpfan/fast-builder-base:0.0.1 as build
+FROM thomasjpfan/fast-builder-base:0.0.2 as build
 
 RUN --mount=type=cache,target=/opt/conda/pkgs,id=conda \
     mamba create \
