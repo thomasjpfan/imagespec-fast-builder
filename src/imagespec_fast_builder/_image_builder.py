@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import sys
@@ -9,10 +10,24 @@ from typing import ClassVar
 
 import click
 from flytekit.image_spec.image_spec import (
+    _F_IMG_ID,
     ImageBuildEngine,
     ImageSpec,
     ImageSpecBuilder,
 )
+
+# The default image builder base image is located at Dockerfile.default-image-builder.
+# For local testing, build the base image by running:
+# 1. Set environment variable `DEFAULT_BUILDER_BASE_IMAGE=localhost:30000/default-image-builder-base`
+# 2. make setup-multiarch-builder
+# 3. make build-default-image-builder-image
+DEFAULT_BUILDER_BASE_IMAGE_ENV = "DEFAULT_BUILDER_BASE_IMAGE"
+DEFAULT_BUILDER_BASE_IMAGE = "thomasjpfan/default-image-builder-base:0.0.2"
+
+BASE_IMAGE_BUILDER = os.getenv(
+    DEFAULT_BUILDER_BASE_IMAGE_ENV, DEFAULT_BUILDER_BASE_IMAGE
+)
+
 
 PYTHON_INSTALL_COMMAND = """\
 RUN --mount=type=cache,target=/root/.cache/uv,id=uv \
@@ -33,7 +48,7 @@ RUN --mount=type=cache,target=/var/cache/apt,id=apt \
 DOCKER_FILE_TEMPLATE = Template(
     """\
 #syntax=docker/dockerfile:1.5
-FROM thomasjpfan/fast-builder-base:0.0.2 as build
+FROM $BASE_IMAGE_BUILDER as build
 
 RUN --mount=type=cache,target=/opt/conda/pkgs,id=conda \
     mamba create \
@@ -83,7 +98,8 @@ $COPY_COMMAND_RUNTIME
 )
 
 
-def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
+def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
+    """Populate tmp_dir with Dockerfile as specified by the `image_spec`."""
     base_image = image_spec.base_image or "debian:bookworm-slim"
     pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
 
@@ -98,11 +114,12 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
     requirements_path = tmp_dir / "requirements.txt"
     requirements_path.write_text("\n".join(requirements))
     python_install_command = PYTHON_INSTALL_COMMAND
+    env_dict = {_F_IMG_ID: image_spec.image_name()}
 
     if image_spec.env:
-        env = " ".join(f"{k}={v}" for k, v in image_spec.env.items())
-    else:
-        env = ""
+        env_dict.update(image_spec.env)
+
+    env = " ".join(f"{k}={v}" for k, v in env_dict.items())
 
     if image_spec.apt_packages:
         apt_install_command = APT_INSTALL_COMMAND_TEMPLATE.substitute(
@@ -150,6 +167,7 @@ def write_dockerfile(image_spec: ImageSpec, tmp_dir: Path):
         run_commands = ""
 
     docker_content = DOCKER_FILE_TEMPLATE.substitute(
+        BASE_IMAGE_BUILDER=BASE_IMAGE_BUILDER,
         PYTHON_VERSION=python_version,
         PYTHON_INSTALL_COMMAND=python_install_command,
         CONDA_PACKAGES=conda_packages_concat,
@@ -213,7 +231,7 @@ class FastImageBuilder(ImageSpecBuilder):
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
-            write_dockerfile(image_spec, tmp_path)
+            create_docker_context(image_spec, tmp_path)
 
             command = [
                 "docker",
@@ -234,4 +252,4 @@ class FastImageBuilder(ImageSpecBuilder):
             subprocess.run(command, check=True)
 
 
-ImageBuildEngine.register("fast-builder", FastImageBuilder())
+ImageBuildEngine.register("fast-builder", FastImageBuilder(), priority=8)
