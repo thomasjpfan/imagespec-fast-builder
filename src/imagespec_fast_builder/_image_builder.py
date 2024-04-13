@@ -86,14 +86,14 @@ RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
     && chown -R flytekit /root \
     && chown -R flytekit /home
 
+$COPY_COMMAND_RUNTIME
+
 $RUN_COMMANDS
 
 RUN echo "source /venv/bin/activate" >> /home/flytekit/.bashrc
 SHELL ["/bin/bash", "-c"]
 
 USER flytekit
-
-$COPY_COMMAND_RUNTIME
 """
 )
 
