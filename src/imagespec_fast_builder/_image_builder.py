@@ -101,6 +101,12 @@ USER flytekit
 def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     """Populate tmp_dir with Dockerfile as specified by the `image_spec`."""
     base_image = image_spec.base_image or "debian:bookworm-slim"
+    if image_spec.cuda:
+        if image_spec.cudnn:
+            base_image = f"docker.io/nvidia/cuda:{image_spec.cuda}-cudnn{image_spec.cudnn}-runtime-ubuntu20.04"
+        else:
+            base_image = f"docker.io/nvidia/cuda:{image_spec.cuda}-runtime-ubuntu20.04"
+
     pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
 
     requirements = ["flytekit"]
@@ -138,12 +144,6 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
         copy_command_runtime = ""
 
     conda_packages = image_spec.conda_packages or []
-    if image_spec.cuda:
-        conda_packages.append(f"cuda={image_spec.cuda}")
-
-    if image_spec.cudnn:
-        conda_packages.append(f"cudnn={image_spec.cudnn}")
-
     if conda_packages:
         conda_packages_concat = " ".join(conda_packages)
     else:

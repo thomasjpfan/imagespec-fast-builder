@@ -7,7 +7,8 @@ image_spec = ImageSpec(
     packages=["torch==2.2.2"],
     registry="ghcr.io/thomasjpfan",
     # platform="linux/arm64",
-    # cuda="12",
+    cuda="12.3.2",
+    cudnn="9",
 )
 
 FastImageBuilder()._build_image(image_spec, push=False)
