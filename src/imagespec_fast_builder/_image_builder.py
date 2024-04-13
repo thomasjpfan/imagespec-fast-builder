@@ -80,7 +80,7 @@ COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$$PATH"
 
 WORKDIR /root
-ENV PYTHONPATH=/root FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
+ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
 RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
     && chown -R flytekit /root \
@@ -114,7 +114,7 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     requirements_path = tmp_dir / "requirements.txt"
     requirements_path.write_text("\n".join(requirements))
     python_install_command = PYTHON_INSTALL_COMMAND
-    env_dict = {_F_IMG_ID: image_spec.image_name()}
+    env_dict = {"PYTHONPATH": "/root", _F_IMG_ID: image_spec.image_name()}
 
     if image_spec.env:
         env_dict.update(image_spec.env)
