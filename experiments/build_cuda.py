@@ -8,7 +8,7 @@ image_spec = ImageSpec(
     registry="ghcr.io/thomasjpfan",
     # platform="linux/arm64",
     cuda="12.3.2",
-    cudnn="9",
+    cudnn="8",
 )
 
 FastImageBuilder()._build_image(image_spec, push=False)
