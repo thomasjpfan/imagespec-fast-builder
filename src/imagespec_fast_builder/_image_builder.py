@@ -101,10 +101,19 @@ USER flytekit
 def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     """Populate tmp_dir with Dockerfile as specified by the `image_spec`."""
     base_image = image_spec.base_image or "debian:bookworm-slim"
-    if image_spec.cuda:
-        # Base image requires an NVIDIA driver. cuda and cudnn will be installed with
-        # conda
-        base_image = "nvcr.io/nvidia/driver:535-5.15.0-1048-nvidia-ubuntu22.04"
+
+    if image_spec.cuda or image_spec.cudnn:
+        msg = (
+            "The `cuda` and `cudnn` parameters are not supported by this image "
+            "builder. For NVIDIA support, you can:\n"
+            "1. Use a base image with an NVIDIA driver from "
+            "https://catalog.ngc.nvidia.com/orgs/nvidia/containers/driver "
+            "And install CUDA on PyPI and conda.\n"
+            "2. Use a base image with CUDA already installed: "
+            "https://hub.docker.com/r/nvidia/cuda/#!. If your Python package manager "
+            "also installs CUDA, then your image will end up bigger."
+        )
+        raise ValueError(msg)
 
     pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
 
@@ -144,11 +153,6 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
 
     conda_packages = image_spec.conda_packages or []
     conda_channels = image_spec.conda_channels or []
-
-    if image_spec.cuda:
-        conda_packages.append(f"cuda={image_spec.cuda}")
-        if image_spec.cudnn:
-            conda_packages.append(f"cudnn={image_spec.cudnn}")
 
     if conda_packages:
         conda_packages_concat = " ".join(conda_packages)
