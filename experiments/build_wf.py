@@ -2,20 +2,28 @@ from flytekit import ImageSpec, task, workflow
 
 image = ImageSpec(
     builder="fast-builder",
-    # builder="envd",
-    packages=["numpy"],
-    # registry="localhost:30000",
+    conda_packages=["numpy", "scikit-learn==1.4.2", "samtools"],
+    conda_channels=["bioconda"],
+    registry="ghcr.io/thomasjpfan",
 )
 
 
 @task(container_image=image)
-def my_task() -> int:
-    import numpy as np
+def train_model() -> float:
+    from sklearn.datasets import load_iris
+    from sklearn.model_selection import train_test_split
+    from sklearn.tree import DecisionTreeClassifier
 
-    X = np.asarray([1, 2, 3])
-    return int(X[1])
+    X, y = load_iris(return_X_y=True)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+
+    clf = DecisionTreeClassifier()
+    clf.fit(X_train, y_train)
+
+    return clf.score(X_test, y_test)
 
 
 @workflow
-def wf() -> int:
-    return my_task()
+def wf() -> float:
+    return train_model()

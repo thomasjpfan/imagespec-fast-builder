@@ -98,6 +98,7 @@ select = [
   "W",
   "YTT",
 ]
+ignore = ["N806"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["rustimport_jupyter"]
