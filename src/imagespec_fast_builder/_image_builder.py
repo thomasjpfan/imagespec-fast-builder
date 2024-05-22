@@ -82,7 +82,7 @@ ENV PATH="/venv/bin:$$PATH"
 WORKDIR /root
 ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
-RUN useradd --create-home --shell /bin/bash -u 1000 flytekit \
+RUN useradd --create-home --shell /bin/bash flytekit \
     && chown -R flytekit /root \
     && chown -R flytekit /home
 
