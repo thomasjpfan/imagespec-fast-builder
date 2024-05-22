@@ -4,7 +4,8 @@ image = ImageSpec(
     builder="fast-builder",
     # builder="envd",
     packages=["numpy"],
-    # registry="localhost:30000",
+    registry="localhost:30000",
+    env={"ABC": "CDE"},
 )
 
 
