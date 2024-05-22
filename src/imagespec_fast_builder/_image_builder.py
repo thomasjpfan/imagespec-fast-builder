@@ -30,7 +30,7 @@ BASE_IMAGE_BUILDER = os.getenv(
 
 
 PYTHON_INSTALL_COMMAND = """\
-RUN --mount=type=cache,sharing=locked,target=/root/.cache/uv,id=uv \
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
     --mount=type=bind,target=requirements.txt,src=requirements.txt \
     /opt/conda/bin/uv \
     pip install --python /opt/conda/envs/dev/bin/python $PIP_INDEX \
@@ -39,7 +39,7 @@ RUN --mount=type=cache,sharing=locked,target=/root/.cache/uv,id=uv \
 
 APT_INSTALL_COMMAND_TEMPLATE = Template(
     """\
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt,id=apt \
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/var/cache/apt,id=apt \
     apt-get update && apt-get install -y --no-install-recommends \
     $APT_PACKAGES
 """
@@ -50,7 +50,7 @@ DOCKER_FILE_TEMPLATE = Template(
 #syntax=docker/dockerfile:1.5
 FROM $BASE_IMAGE_BUILDER as build
 
-RUN --mount=type=cache,sharing=locked,target=/opt/conda/pkgs,id=conda \
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
     mamba create \
         -c conda-forge $CONDA_CHANNELS \
         -n dev -y python=$PYTHON_VERSION $CONDA_PACKAGES
