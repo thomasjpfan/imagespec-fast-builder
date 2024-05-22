@@ -69,12 +69,8 @@ RUN /venv/bin/conda-unpack
 
 FROM $BASE_IMAGE AS runtime
 
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt,id=apt \
-    apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates
-RUN update-ca-certificates
-
 $APT_INSTALL_COMMAND
+RUN update-ca-certificates
 
 COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$$PATH"
@@ -126,12 +122,14 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
 
     env = " ".join(f"{k}={v}" for k, v in env_dict.items())
 
+    apt_packages = ["ca-certificates"]
+
     if image_spec.apt_packages:
-        apt_install_command = APT_INSTALL_COMMAND_TEMPLATE.substitute(
-            APT_PACKAGES=" ".join(image_spec.apt_packages)
-        )
-    else:
-        apt_install_command = ""
+        apt_packages.extend(image_spec.apt_packages)
+
+    apt_install_command = APT_INSTALL_COMMAND_TEMPLATE.substitute(
+        APT_PACKAGES=" ".join(apt_packages)
+    )
 
     if image_spec.source_root:
         source_path = tmp_dir / "src"
