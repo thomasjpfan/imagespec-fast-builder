@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 import sys
@@ -15,19 +14,6 @@ from flytekit.image_spec.image_spec import (
     ImageSpec,
     ImageSpecBuilder,
 )
-
-# The default image builder base image is located at Dockerfile.default-image-builder.
-# For local testing, build the base image by running:
-# 1. Set environment variable `DEFAULT_BUILDER_BASE_IMAGE=localhost:30000/default-image-builder-base`
-# 2. make setup-multiarch-builder
-# 3. make build-default-image-builder-image
-DEFAULT_BUILDER_BASE_IMAGE_ENV = "DEFAULT_BUILDER_BASE_IMAGE"
-DEFAULT_BUILDER_BASE_IMAGE = "thomasjpfan/default-image-builder-base:0.0.3"
-
-BASE_IMAGE_BUILDER = os.getenv(
-    DEFAULT_BUILDER_BASE_IMAGE_ENV, DEFAULT_BUILDER_BASE_IMAGE
-)
-
 
 PYTHON_INSTALL_COMMAND = """\
 RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
@@ -48,31 +34,11 @@ RUN --mount=type=cache,sharing=locked,mode=0777,target=/var/cache/apt,id=apt \
 DOCKER_FILE_TEMPLATE = Template(
     """\
 #syntax=docker/dockerfile:1.5
-FROM $BASE_IMAGE_BUILDER as build
-
-RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
-    mamba create \
-        -c conda-forge $CONDA_CHANNELS \
-        -n dev -y python=$PYTHON_VERSION $CONDA_PACKAGES
-
-WORKDIR /root
-
-$COPY_COMMAND_BUILDER
-
-$PYTHON_INSTALL_COMMAND
-
-RUN /opt/conda/bin/conda-pack -n dev -o /tmp/env.tar && \
-    mkdir /venv && cd /venv && tar xf /tmp/env.tar && \
-    rm /tmp/env.tar
-
-RUN /venv/bin/conda-unpack
-
 FROM $BASE_IMAGE AS runtime
 
 $APT_INSTALL_COMMAND
 RUN update-ca-certificates
 
-COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$$PATH"
 
 WORKDIR /root
@@ -83,6 +49,8 @@ RUN useradd --create-home --shell /bin/bash flytekit \
     && chown -R flytekit /home
 
 $COPY_COMMAND_RUNTIME
+
+$PYTHON_INSTALL_COMMAND
 
 $RUN_COMMANDS
 
