@@ -62,7 +62,7 @@ RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda 
     /opt/conda/bin/micromamba create -n uv uv -c conda-forge
 
 RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
-    /opt/conda/bin/micromamba create -n dev -c conda-forge \
+    /opt/conda/bin/micromamba create -n dev -c conda-forge $CONDA_CHANNELS \
     python=$PYTHON_VERSION $CONDA_PACKAGES
 
 $PYTHON_INSTALL_COMMAND
