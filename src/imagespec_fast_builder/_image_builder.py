@@ -15,13 +15,13 @@ from flytekit.image_spec.image_spec import (
     ImageSpecBuilder,
 )
 
-PYTHON_INSTALL_COMMAND = """\
+PYTHON_INSTALL_COMMAND_TEMPLATE = Template("""\
 RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
     --mount=type=bind,target=requirements.txt,src=requirements.txt \
-    /opt/conda/bin/uv \
+    /opt/conda/envs/uv/bin/uv \
     pip install --python /opt/conda/envs/dev/bin/python $PIP_INDEX \
     --requirement requirements.txt
-"""
+""")
 
 APT_INSTALL_COMMAND_TEMPLATE = Template(
     """\
@@ -34,27 +34,47 @@ RUN --mount=type=cache,sharing=locked,mode=0777,target=/var/cache/apt,id=apt \
 DOCKER_FILE_TEMPLATE = Template(
     """\
 #syntax=docker/dockerfile:1.5
-FROM $BASE_IMAGE AS runtime
+FROM $BASE_IMAGE
 
 $APT_INSTALL_COMMAND
 RUN update-ca-certificates
-
-ENV PATH="/venv/bin:$$PATH"
-
-WORKDIR /root
-ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
 RUN useradd --create-home --shell /bin/bash flytekit \
     && chown -R flytekit /root \
     && chown -R flytekit /home
 
-$COPY_COMMAND_RUNTIME
+ENV MAMBA_BIN_DIR=/opt/conda/bin MAMBA_VERSION=1.5.8 MAMBA_ROOT_PREFIX=/opt/conda
+RUN /bin/bash -c 'set -euo pipefail && \
+    ARCH="$$(uname -m)" && \
+    if [[ "$$ARCH" == "aarch64" ]]; then \
+    ARCH="aarch64"; \
+    elif [[ "$$ARCH" == "ppc64le" ]]; then \
+    ARCH="ppc64le"; \
+    else \
+    ARCH="64"; \
+    fi && \
+    mkdir -p $$MAMBA_BIN_DIR && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-$$ARCH/$$MAMBA_VERSION | \
+    tar -xvj -C $$MAMBA_BIN_DIR --strip-components=1 bin/micromamba' && \
+    chown -R flytekit $$MAMBA_ROOT_PREFIX
+
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
+    /opt/conda/bin/micromamba create -n uv uv -c conda-forge
+
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
+    /opt/conda/bin/micromamba create -n dev -c conda-forge \
+    python=$PYTHON_VERSION $CONDA_PACKAGES
 
 $PYTHON_INSTALL_COMMAND
 
+# Configure user space
+ENV PATH="/opt/conda/envs/dev/bin:/opt/conda/envs/uv/bin:/opt/conda/bin:$$PATH"
+ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
+
+$COPY_COMMAND_RUNTIME
 $RUN_COMMANDS
 
-RUN echo "source /venv/bin/activate" >> /home/flytekit/.bashrc
+WORKDIR /root
 SHELL ["/bin/bash", "-c"]
 
 USER flytekit
@@ -65,12 +85,6 @@ USER flytekit
 def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     """Populate tmp_dir with Dockerfile as specified by the `image_spec`."""
     base_image = image_spec.base_image or "debian:bookworm-slim"
-    if image_spec.cuda:
-        # Base image requires an NVIDIA driver. cuda and cudnn will be installed with
-        # conda
-        base_image = "nvcr.io/nvidia/driver:535-5.15.0-1048-nvidia-ubuntu22.04"
-
-    pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
 
     requirements = ["flytekit"]
     if image_spec.requirements:
@@ -82,7 +96,11 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
 
     requirements_path = tmp_dir / "requirements.txt"
     requirements_path.write_text("\n".join(requirements))
-    python_install_command = PYTHON_INSTALL_COMMAND
+
+    pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
+    python_install_command = PYTHON_INSTALL_COMMAND_TEMPLATE.substitute(
+        PIP_INDEX=pip_index
+    )
     env_dict = {"PYTHONPATH": "/root", _F_IMG_ID: image_spec.image_name()}
 
     if image_spec.env:
@@ -90,8 +108,7 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
 
     env = " ".join(f"{k}={v}" for k, v in env_dict.items())
 
-    apt_packages = ["ca-certificates"]
-
+    apt_packages = ["ca-certificates", "bzip2", "curl"]
     if image_spec.apt_packages:
         apt_packages.extend(image_spec.apt_packages)
 
@@ -102,10 +119,8 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     if image_spec.source_root:
         source_path = tmp_dir / "src"
         shutil.copytree(image_spec.source_root, source_path)
-        copy_command_builder = "COPY ./src /root"
         copy_command_runtime = "COPY --chown=flytekit ./src /root"
     else:
-        copy_command_builder = ""
         copy_command_runtime = ""
 
     conda_packages = image_spec.conda_packages or []
@@ -137,7 +152,6 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
         run_commands = ""
 
     docker_content = DOCKER_FILE_TEMPLATE.substitute(
-        BASE_IMAGE_BUILDER=BASE_IMAGE_BUILDER,
         PYTHON_VERSION=python_version,
         PYTHON_INSTALL_COMMAND=python_install_command,
         CONDA_PACKAGES=conda_packages_concat,
@@ -146,7 +160,6 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
         BASE_IMAGE=base_image,
         PIP_INDEX=pip_index,
         ENV=env,
-        COPY_COMMAND_BUILDER=copy_command_builder,
         COPY_COMMAND_RUNTIME=copy_command_runtime,
         RUN_COMMANDS=run_commands,
     )

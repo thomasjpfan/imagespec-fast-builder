@@ -6,23 +6,40 @@ RUN --mount=type=cache,sharing=locked,mode=0777,target=/var/cache/apt,id=apt \
     curl bzip2 ca-certificates
 RUN update-ca-certificates
 
-# Install micromamba
-ENV MAMBA_BIN_DIR=/opt/conda/bin MAMBA_VERSION=1.5.8 MAMBA_ROOT_PREFIX=/opt/conda
-RUN mkdir -p ${MAMBA_BIN_DIR} && \
-    curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/${MAMBA_VERSION} | \
-    tar -xvj -C ${MAMBA_BIN_DIR} --strip-components=1 bin/micromamba
+RUN useradd --create-home --shell /bin/bash flytekit \
+    && chown -R flytekit /root \
+    && chown -R flytekit /home
 
-RUN /opt/conda/bin/micromamba create -n uv uv -c conda-forge
-RUN /opt/conda/bin/micromamba create -n dev python=3.11 pip -c conda-forge
+# Install micromamba
+ENV MAMBA_VERSION=1.5.8 MAMBA_ROOT_PREFIX=/opt/conda MAMBA_BIN_DIR=/opt/conda/bin
+RUN /bin/bash -c 'set -euo pipefail && \
+    ARCH="$(uname -m)" && \
+    if [[ "$ARCH" == "aarch64" ]]; then \
+    ARCH="aarch64"; \
+    elif [[ "$ARCH" == "ppc64le" ]]; then \
+    ARCH="ppc64le"; \
+    else \
+    ARCH="64"; \
+    fi && \
+    mkdir -p $MAMBA_BIN_DIR && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-$ARCH/$MAMBA_VERSION | \
+    tar -xvj -C $MAMBA_BIN_DIR --strip-components=1 bin/micromamba' && \
+    chown -R flytekit $MAMBA_ROOT_PREFIX
+
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
+    /opt/conda/bin/micromamba create -n uv uv -c conda-forge
+
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
+    /opt/conda/bin/micromamba create -n dev python=3.11 pip -c conda-forge
+
+ENV CONDA_PREFIX=/opt/conda/envs/dev
+
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
+    /opt/conda/envs/uv/bin/uv pip install numpy
 
 # Configure user space
 ENV PATH="/opt/conda/envs/dev/bin:/opt/conda/envs/uv/bin:/opt/conda/bin:$PATH"
-ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs CONDA_PREFIX=/opt/conda/envs/dev
-
-RUN useradd --create-home --shell /bin/bash flytekit \
-    && chown -R flytekit /root \
-    && chown -R flytekit /home \
-    && chown -R flytekit /opt/conda
+ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs
 
 WORKDIR /root
 SHELL ["/bin/bash", "-c"]
