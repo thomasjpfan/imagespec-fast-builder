@@ -3,8 +3,10 @@ from flytekit import ImageSpec, task, workflow
 image = ImageSpec(
     builder="fast-builder",
     # builder="envd",
-    packages=["numpy"],
-    registry="localhost:30000",
+    # packages=["numpy"],
+    conda_packages=["numpy"],
+    # registry="localhost:30000",
+    registry="ghcr.io/thomasjpfan",
     env={"ABC": "CDE"},
 )
 
