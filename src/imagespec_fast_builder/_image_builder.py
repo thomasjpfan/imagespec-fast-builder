@@ -36,6 +36,7 @@ DOCKER_FILE_TEMPLATE = Template(
 #syntax=docker/dockerfile:1.5
 FROM $BASE_IMAGE
 
+USER root
 $APT_INSTALL_COMMAND
 RUN update-ca-certificates
 
