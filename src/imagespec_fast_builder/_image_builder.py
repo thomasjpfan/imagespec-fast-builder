@@ -40,9 +40,8 @@ USER root
 $APT_INSTALL_COMMAND
 RUN update-ca-certificates
 
-RUN useradd --create-home --shell /bin/bash flytekit \
-    && chown -R flytekit /root \
-    && chown -R flytekit /home
+RUN id -u flytekit || useradd --create-home --shell /bin/bash flytekit
+RUN chown -R flytekit /root && chown -R flytekit /home
 
 ENV MAMBA_BIN_DIR=/opt/conda/bin MAMBA_VERSION=1.5.8 MAMBA_ROOT_PREFIX=/opt/conda
 RUN /bin/bash -c 'set -euo pipefail && \
