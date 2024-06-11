@@ -87,6 +87,17 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     base_image = image_spec.base_image or "debian:bookworm-slim"
 
     requirements = ["flytekit"]
+
+    if image_spec.cuda is not None or image_spec.cudnn is not None:
+        msg = (
+            "cuda and cudnn is not supported. If you are installed a GPU accelerated "
+            "library on PyPI, then it likely will install cuda from PyPI. With conda"
+            "you can installed cuda from the `nvidia` channel by adding `nvidia` to "
+            "ImageSpec.conda_channels and adding packages from "
+            "https://anaconda.org/nvidia into ImageSpec.conda_packages"
+        )
+        raise ValueError(msg)
+
     if image_spec.requirements:
         with open(image_spec.requirements) as f:
             requirements.extend([line.strip() for line in f.readlines()])
@@ -125,11 +136,6 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
 
     conda_packages = image_spec.conda_packages or []
     conda_channels = image_spec.conda_channels or []
-
-    if image_spec.cuda:
-        conda_packages.append(f"cuda={image_spec.cuda}")
-        if image_spec.cudnn:
-            conda_packages.append(f"cudnn={image_spec.cudnn}")
 
     if conda_packages:
         conda_packages_concat = " ".join(conda_packages)
