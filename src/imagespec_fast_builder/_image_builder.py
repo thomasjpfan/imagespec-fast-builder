@@ -14,6 +14,7 @@ from flytekit.image_spec.image_spec import (
     ImageSpec,
     ImageSpecBuilder,
 )
+from flytekit.tools.ignore import DockerIgnore, GitIgnore, IgnoreGroup, StandardIgnore
 
 PYTHON_INSTALL_COMMAND_TEMPLATE = Template("""\
 RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
@@ -130,7 +131,13 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
 
     if image_spec.source_root:
         source_path = tmp_dir / "src"
-        shutil.copytree(image_spec.source_root, source_path)
+
+        ignore = IgnoreGroup(
+            image_spec.source_root, [GitIgnore, DockerIgnore, StandardIgnore]
+        )
+        shutil.copytree(
+            image_spec.source_root, source_path, ignore=ignore, dirs_exist_ok=True
+        )
         copy_command_runtime = "COPY --chown=flytekit ./src /root"
     else:
         copy_command_runtime = ""
