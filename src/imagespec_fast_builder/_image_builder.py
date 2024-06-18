@@ -78,6 +78,7 @@ WORKDIR /root
 SHELL ["/bin/bash", "-c"]
 
 USER flytekit
+RUN echo "export PATH=$$PATH" >> $$HOME/.profile
 """
 )
 
