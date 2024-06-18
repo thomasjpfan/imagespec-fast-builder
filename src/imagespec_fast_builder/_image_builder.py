@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import sys
@@ -108,7 +109,7 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
         requirements.extend(image_spec.packages)
 
     requirements_path = tmp_dir / "requirements.txt"
-    requirements_path.write_text("\n".join(requirements))
+    requirements_path.write_text(os.linesep.join(requirements))
 
     pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
     python_install_command = PYTHON_INSTALL_COMMAND_TEMPLATE.substitute(
