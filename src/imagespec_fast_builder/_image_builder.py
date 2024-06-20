@@ -73,6 +73,10 @@ $PYTHON_INSTALL_COMMAND
 ENV PATH="/opt/conda/envs/dev/bin:/opt/conda/envs/uv/bin:/opt/conda/bin:$$PATH"
 ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
+# Adds nvidia just in case it exists
+ENV PATH="$$PATH:/usr/local/nvidia/bin:/usr/local/cuda/bin" \
+    LD_LIBRARY_PATH="/usr/local/nvidia/lib64:$$LD_LIBRARY_PATH"
+
 $COPY_COMMAND_RUNTIME
 $RUN_COMMANDS
 
