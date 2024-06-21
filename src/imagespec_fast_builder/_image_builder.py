@@ -77,11 +77,21 @@ RUN echo "export PATH=$$PATH" >> $$HOME/.profile
 )
 
 
+def get_flytekit_for_pypi():
+    """Get flytekit version on PyPI."""
+    from flytekit import __version__
+
+    if not __version__ or "dev" in __version__:
+        return "flytekit"
+    else:
+        return f"flytekit=={__version__}"
+
+
 def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     """Populate tmp_dir with Dockerfile as specified by the `image_spec`."""
     base_image = image_spec.base_image or "debian:bookworm-slim"
 
-    requirements = ["flytekit"]
+    requirements = [get_flytekit_for_pypi()]
 
     if image_spec.cuda is not None or image_spec.cudnn is not None:
         msg = (
