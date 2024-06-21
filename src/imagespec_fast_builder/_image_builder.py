@@ -19,9 +19,10 @@ from flytekit.tools.ignore import DockerIgnore, GitIgnore, IgnoreGroup, Standard
 
 PYTHON_INSTALL_COMMAND_TEMPLATE = Template("""\
 RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
+    --mount=from=uv,source=/uv,target=/usr/bin/uv \
     --mount=type=bind,target=requirements.txt,src=requirements.txt \
-    /opt/conda/envs/uv/bin/uv \
-    pip install --python /opt/conda/envs/dev/bin/python $PIP_INDEX \
+    /usr/bin/uv \
+    pip install --python /root/micromamba/envs/dev/bin/python $PIP_EXTRA \
     --requirement requirements.txt
 """)
 
@@ -36,6 +37,9 @@ RUN --mount=type=cache,sharing=locked,mode=0777,target=/var/cache/apt,id=apt \
 DOCKER_FILE_TEMPLATE = Template(
     """\
 #syntax=docker/dockerfile:1.5
+FROM ghcr.io/astral-sh/uv:0.2.13 as uv
+FROM mambaorg/micromamba:1.5.8-bookworm-slim as micromamba
+
 FROM $BASE_IMAGE
 
 USER root
@@ -45,32 +49,16 @@ RUN update-ca-certificates
 RUN id -u flytekit || useradd --create-home --shell /bin/bash flytekit
 RUN chown -R flytekit /root && chown -R flytekit /home
 
-ENV MAMBA_BIN_DIR=/opt/conda/bin MAMBA_VERSION=1.5.8 MAMBA_ROOT_PREFIX=/opt/conda
-RUN /bin/bash -c 'set -euo pipefail && \
-    ARCH="$$(uname -m)" && \
-    if [[ "$$ARCH" == "aarch64" ]]; then \
-    ARCH="aarch64"; \
-    elif [[ "$$ARCH" == "ppc64le" ]]; then \
-    ARCH="ppc64le"; \
-    else \
-    ARCH="64"; \
-    fi && \
-    mkdir -p $$MAMBA_BIN_DIR && \
-    curl -Ls https://micro.mamba.pm/api/micromamba/linux-$$ARCH/$$MAMBA_VERSION | \
-    tar -xvj -C $$MAMBA_BIN_DIR --strip-components=1 bin/micromamba' && \
-    chown -R flytekit $$MAMBA_ROOT_PREFIX
-
-RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
-    /opt/conda/bin/micromamba create -n uv uv -c conda-forge
-
-RUN --mount=type=cache,sharing=locked,mode=0777,target=/opt/conda/pkgs,id=conda \
-    /opt/conda/bin/micromamba create -n dev -c conda-forge $CONDA_CHANNELS \
+RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/micromamba/pkgs,\
+id=micromamba \
+    --mount=from=micromamba,source=/usr/bin/micromamba,target=/usr/bin/micromamba \
+    /usr/bin/micromamba create -n dev -c conda-forge $CONDA_CHANNELS \
     python=$PYTHON_VERSION $CONDA_PACKAGES
 
 $PYTHON_INSTALL_COMMAND
 
 # Configure user space
-ENV PATH="/opt/conda/envs/dev/bin:/opt/conda/envs/uv/bin:/opt/conda/bin:$$PATH"
+ENV PATH="/root/micromamba/envs/dev/bin:$$PATH"
 ENV FLYTE_SDK_RICH_TRACEBACKS=0 SSL_CERT_DIR=/etc/ssl/certs $ENV
 
 # Adds nvidia just in case it exists
@@ -115,9 +103,9 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     requirements_path = tmp_dir / "requirements.txt"
     requirements_path.write_text(os.linesep.join(requirements))
 
-    pip_index = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
+    pip_extra = f"--index-url {image_spec.pip_index}" if image_spec.pip_index else ""
     python_install_command = PYTHON_INSTALL_COMMAND_TEMPLATE.substitute(
-        PIP_INDEX=pip_index
+        PIP_EXTRA=pip_extra
     )
     env_dict = {"PYTHONPATH": "/root", _F_IMG_ID: image_spec.image_name()}
 
@@ -141,7 +129,10 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
             image_spec.source_root, [GitIgnore, DockerIgnore, StandardIgnore]
         )
         shutil.copytree(
-            image_spec.source_root, source_path, ignore=ignore, dirs_exist_ok=True
+            image_spec.source_root,
+            source_path,
+            ignore=shutil.ignore_patterns(*ignore.list_ignored()),
+            dirs_exist_ok=True,
         )
         copy_command_runtime = "COPY --chown=flytekit ./src /root"
     else:
@@ -177,7 +168,6 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
         CONDA_CHANNELS=conda_channels_concat,
         APT_INSTALL_COMMAND=apt_install_command,
         BASE_IMAGE=base_image,
-        PIP_INDEX=pip_index,
         ENV=env,
         COPY_COMMAND_RUNTIME=copy_command_runtime,
         RUN_COMMANDS=run_commands,
