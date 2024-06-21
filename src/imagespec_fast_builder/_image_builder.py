@@ -89,7 +89,9 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
             "library on PyPI, then it likely will install cuda from PyPI. With conda"
             "you can installed cuda from the `nvidia` channel by adding `nvidia` to "
             "ImageSpec.conda_channels and adding packages from "
-            "https://anaconda.org/nvidia into ImageSpec.conda_packages"
+            "https://anaconda.org/nvidia into ImageSpec.conda_packages. If you require "
+            "cuda for non-python dependencies, you can set a `base_image` with cuda "
+            "preinstalled."
         )
         raise ValueError(msg)
 

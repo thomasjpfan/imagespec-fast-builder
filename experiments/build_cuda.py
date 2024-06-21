@@ -1,14 +1,14 @@
 from flytekit import ImageSpec, Resources, task
 
-image = ImageSpec(
-    name="pytorch",
-    packages=["torch==2.3.1"],
-    builder="fast-builder",
-    registry="ghcr.io/thomasjpfan",
-    env={"ABC": "EFG", "abc": "xyz"},
-)
+# image = ImageSpec(
+#     name="pytorch",
+#     packages=["torch==2.3.1"],
+#     builder="fast-builder",
+#     registry="ghcr.io/thomasjpfan",
+#     env={"ABC": "EFG", "abc": "xyz"},
+# )
 # This is the image from the above image spec
-# image = "ghcr.io/thomasjpfan/pytorch:fpKDvHgYK_C3ukST8iGGAQ"
+image = "ghcr.io/thomasjpfan/pytorch:qZNVDlRwaQI4vPcs312jYw"
 
 
 @task(container_image=image, requests=Resources(gpu="1"))
