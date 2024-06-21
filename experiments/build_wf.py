@@ -7,6 +7,7 @@ image = ImageSpec(
     conda_packages=["numpy==2.0.0"],
     # registry="localhost:30000",
     registry="ghcr.io/thomasjpfan",
+    env={"abc": "afdsf"},
 )
 
 
