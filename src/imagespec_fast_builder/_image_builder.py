@@ -28,9 +28,9 @@ RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/uv,id=uv \
 
 PIP_PYTHON_INSTALL_COMMAND_TEMPLATE = Template("""\
 RUN --mount=type=cache,sharing=locked,mode=0777,target=/root/.cache/pip,id=pip \
-    --mount=type=bind,target=requirements_pypi.txt,src=requirements_pypi.txt \
+    --mount=type=bind,target=requirements_pip.txt,src=requirements_pip.txt \
     /root/micromamba/envs/dev/bin/python -m pip install $PIP_EXTRA \
-    --requirement requirements_pypi.txt
+    --requirement requirements_pip.txt
 """)
 
 APT_INSTALL_COMMAND_TEMPLATE = Template(
@@ -141,7 +141,7 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     )
 
     if pip_requirements:
-        requirements_uv_path = tmp_dir / "requirements_pypi.txt"
+        requirements_uv_path = tmp_dir / "requirements_pip.txt"
         requirements_uv_path.write_text(os.linesep.join(pip_requirements))
 
         pip_python_install_command = PIP_PYTHON_INSTALL_COMMAND_TEMPLATE.substitute(
