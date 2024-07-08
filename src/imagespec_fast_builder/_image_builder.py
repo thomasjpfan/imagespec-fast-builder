@@ -202,7 +202,7 @@ def create_docker_context(image_spec: ImageSpec, tmp_dir: Path):
     else:
         python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
 
-    if image_spec.entrypoint is None:
+    if getattr(image_spec, "entrypoint", None) is None:
         entrypoint = ""
     else:
         entrypoint = f"ENTRYPOINT {json.dumps(image_spec.entrypoint)}"
