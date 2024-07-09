@@ -5,7 +5,9 @@ from imagespec_fast_builder import FastImageBuilder
 image = ImageSpec(
     name="check-flytekit",
     builder="fast-builder",
-    commands=["mkdir /hello", "touch /hello/world.txt"],
+    packages=["torch==2.3.0"],
+    platform="linux/amd64",
+    env={"hello": "world"},
 )
 
 builder = FastImageBuilder()
